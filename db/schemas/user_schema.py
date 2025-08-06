@@ -22,3 +22,10 @@ class UserProfile(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FitnessGoalRequestSchema(BaseModel):
+    goal_achievement_time_frame: str
+    current_weight: float
+    target_weight: float
+    current_daily_calories: float

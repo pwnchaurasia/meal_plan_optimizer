@@ -30,7 +30,7 @@ Save your meal preference and grocery inventory to get meals suggestions.
 ### High level Architecture
 
 <p align="center">
-<img src="images/high_arch.png" width="45%">
+<img src="images/high_arch.png" width="55%">
 </p>
 
 
