@@ -84,12 +84,10 @@ Overnight processing pipeline
 - Sync yesterday's fitness data from all connected apps
 - Batch process users by timezone (sync when it's 3 AM in their local time)
 - Rate-limited API calls: 50 requests/minute to avoid hitting Fitbit/Google Fit limits
-- 
 
 - We schedule it to run over night.
 - Depending on the user, we can split the data in multiple processors to process the data and generate the meal plan.
 - We will give 3 different recipies for each meal, and some snacking options.
-- 
 
 ##### Delivery
 - Cache generated meal plans in Redis
