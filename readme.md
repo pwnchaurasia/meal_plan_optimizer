@@ -21,12 +21,44 @@ Save your meal preference and grocery inventory to get meals suggestions.
 - 
 
 
+
+### Technical Strategy
+
+#### API Layer
+1. FastAPI-based REST API with automatic OpenAPI documentation
+2. Authentication using Mobile number,
+3. Registration only happens after a successful otp verification
+4. JWT-based authentication
+
+#### Business Logic
+1. User Profile Manager
+2. Workout Logger
+3. Integration with 3rd party apps for logging more detailed data
+
+
+### Datalayer
+
+
+1. PostgreSQL: Primary database for user profiles, recipes, meal plans, and health data
+2. Redis: 
+3. External APIs:
+
+`Note: for local dev I have used sqllite`
+
+
+### Data Flow Architecture
+
+
+
+
 ### Folder structure:
 
 - api: contains all the endpoints
 - db: 
   - db/schemas: schema for request and response
   - db/models: Models for interacting with database
+- images: all the images in the md file
+- integrations: 3rd party integration for   
 - services: all the business logic
 
 
@@ -51,4 +83,11 @@ Save your meal preference and grocery inventory to get meals suggestions.
 
 ```
 
+
+
+### Compliance
+
+1. GDPR: Allow customer to export their data and delete it if they want
+2. API Security: OAuth2/JWT authentication
+3. 
 

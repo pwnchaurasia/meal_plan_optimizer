@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from db.schemas import workout_schema
 
-router = APIRouter(prefix="/workouts", tags=["workout"])
+router = APIRouter(prefix="/workouts", tags=["Workout"])
 
 # few of the post apis I have not created as it's very straight forward
 # all these would have current_user, which will be fetched from the auth token
