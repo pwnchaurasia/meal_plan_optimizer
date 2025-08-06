@@ -29,3 +29,9 @@ class FitnessGoalRequestSchema(BaseModel):
     current_weight: float
     target_weight: float
     current_daily_calories: float
+
+
+class FitnessAppConnectionRequestSchema(BaseModel):
+    provider: str
+    authtoken: str
+    refreshtoken: str

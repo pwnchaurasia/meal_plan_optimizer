@@ -52,3 +52,10 @@ class FoodPreferenceType(enum.Enum):
     KETO = "keto"
     RAW_FOOD = "raw_food"
     MEDITERRANEAN = "mediterranean"
+
+
+class FitnessProvider(enum.Enum):
+    GOOGLE_FIT = "google_fit"
+    FITBIT = "fitbit"
+    APPLE_HEALTH = "apple_health"
+    MANUAL = "manual"

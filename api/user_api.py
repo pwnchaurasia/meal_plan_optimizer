@@ -28,3 +28,10 @@ async def update_my_fitness_goal(request: user_schema.FitnessGoalRequestSchema):
             name="get-daily-meals")
 async def get_daily_meals(request):
     return UserService.today_meals(request)
+
+
+
+@router.post("/me/connect-fitness-app"):
+async def connect_fitness_app(request: user_schema.FitnessAppConnectionRequestSchema, name="connect-fitness-app"):
+
+

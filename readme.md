@@ -15,6 +15,11 @@ Save your meal preference and grocery inventory to get meals suggestions.
 3. Workout Progress: Track your workout.
 
 
+### Assumptions:
+
+- to prepare the meal plan we will be using sleep data of day 1 and then suggesting the meals on day 3rd day
+- 
+
 
 ### Folder structure:
 
