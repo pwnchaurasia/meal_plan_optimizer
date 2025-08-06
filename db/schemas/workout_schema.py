@@ -1,3 +1,6 @@
+from datetime import date
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -30,3 +33,10 @@ class ExerciseSetResponseSchema(BaseModel):
     reps: int
     time: int
 
+
+class WorkoutDataSchema(BaseModel):
+    date: date
+    steps: Optional[int] = None
+    active_minutes: Optional[int] = None
+    calories_burned: Optional[int] = None
+    workout_type: Optional[str] = None

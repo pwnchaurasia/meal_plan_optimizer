@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
-from datetime import datetime
+from typing import List, Optional, Any
+from datetime import datetime, date
 
 
 class IngredientBase(BaseModel):
@@ -89,3 +89,17 @@ class RecipeSearchQuery(BaseModel):
     max_calories: Optional[int]
     limit: int
     offset: int
+
+
+class NutritionTargets(BaseModel):
+    total_calories: float
+    protein_g: float
+    carbs_g: float
+    fat_g: float
+
+class MealPlan(BaseModel):
+    date: date
+    total_calories: float
+    meals: List[dict[str, Any]]
+    nutrition_summary: dict[str, int]
+    recommendations: List[str]

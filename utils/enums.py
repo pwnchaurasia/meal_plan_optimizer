@@ -59,3 +59,8 @@ class FitnessProvider(enum.Enum):
     FITBIT = "fitbit"
     APPLE_HEALTH = "apple_health"
     MANUAL = "manual"
+
+class WeightGoal(enum.Enum):
+    LOSE = "LOSE"
+    GAIN = "GAIN"
+    MAINTAIN = "MAINTAIN"
