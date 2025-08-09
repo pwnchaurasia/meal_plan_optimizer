@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, EmailStr, HttpUrl, computed_field, field_validator, root_validator, Field
@@ -29,6 +29,28 @@ class FitnessGoalRequestSchema(BaseModel):
     current_weight: float
     target_weight: float
     current_daily_calories: float
+    daily_activity_level: str
+
+
+class FitnessGoalUpdateSchema(BaseModel):
+    goal_achievement_time_frame: Optional[str] = None
+    current_weight: Optional[float] = None
+    target_weight: Optional[float] = None
+    current_daily_calories: Optional[float] = None
+    daily_activity_level: Optional[str] = None
+
+
+class UserProfileUpdateSchema(BaseModel):
+    gender: Optional[str] = None
+    food_preference_type: Optional[str] = None
+    preferred_meal_frequency: Optional[int] = None
+    snack_preference: Optional[bool] = None
+    cooking_skill_level: Optional[int] = None
+    max_prep_time_minutes: Optional[int] = None
+    allergies: Optional[List[str]] = None
+    dietary_restrictions: Optional[List[str]] = None
+    disliked_foods: Optional[List[str]] = None
+    preferred_cuisines: Optional[List[str]] = None
 
 
 class FitnessAppConnectionRequestSchema(BaseModel):

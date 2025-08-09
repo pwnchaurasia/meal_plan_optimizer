@@ -28,6 +28,9 @@ class UserFitnessConnection(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    user = relationship("User", back_populates="user_fitness_app_connection")
+    fitness_data = relationship("DailyFitnessData", back_populates="app_connection")
+
 
     __table_args__ = (
         UniqueConstraint('user_id', 'provider', name='unique_user_provider'),
@@ -61,7 +64,9 @@ class DailyFitnessData(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     # Relationships
-    connection = relationship("UserFitnessConnection", back_populates="fitness_data")
+    app_connection = relationship("UserFitnessConnection", back_populates="fitness_data")
+    user = relationship("User", back_populates="daily_fitness_data")
+
 
     __table_args__ = (
         UniqueConstraint('user_id', 'date', name='unique_user_date'),

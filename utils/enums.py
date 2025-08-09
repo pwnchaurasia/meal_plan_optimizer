@@ -26,9 +26,9 @@ class ExerciseType(enum.Enum):
 
 
 class GoalAchievementTimeFrameType(enum.Enum):
-    SLOW = "SLOW"
-    AVERAGE = "AVERAGE"
-    FAST = "FAST"
+    SLOW = "slow"
+    AVERAGE = "average"
+    FAST = "fast"
 
 
 class ActivityLevel(enum.Enum):

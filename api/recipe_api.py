@@ -1,9 +1,9 @@
-from db.conn import get_db
+from db.db_conn import get_db
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from db.conn import get_db
+from db.db_conn import get_db
 from db.schemas import recipe_schema
 from utils.dependencies import get_current_user
 

@@ -3,3 +3,6 @@ __pycache__
 .idea
 .vscode
 meal_optimizer.db
+logs
+logs/*
+API_ENDPOINTS_SUMMARY.md

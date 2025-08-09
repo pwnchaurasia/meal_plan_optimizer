@@ -1,7 +1,7 @@
 from db.models import Base
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Enum, Text
 from sqlalchemy import func
-
+from sqlalchemy.orm import relationship
 from utils.enums import GoalAchievementTimeFrameType, Gender, FoodPreferenceType, ActivityLevel
 
 
@@ -19,6 +19,19 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    fitness_goal = relationship("FitnessGoal", back_populates="user", cascade="all, delete-orphan")
+    user_profile = relationship("UserProfile", back_populates="user", cascade="all, delete-orphan")
+    workout = relationship("Workout", back_populates="user", cascade="all, delete-orphan")
+    user_fitness_app_connection = relationship(
+        "UserFitnessConnection",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+    daily_fitness_data = relationship(
+        "DailyFitnessData",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 class FitnessGoal(Base):
     __tablename__ = "fitness_goals"
@@ -47,6 +60,8 @@ class FitnessGoal(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    user = relationship("User", back_populates="fitness_goal")
+
 
 class UserProfile(Base):
     __tablename__ = "user_profile"
@@ -54,16 +69,22 @@ class UserProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
 
-    gender = Column(Enum(Gender), nullable=False)
+    gender = Column(Enum(Gender), nullable=True)
 
     # Dietary Preferences
-    food_preference_type = Column(Enum(FoodPreferenceType), nullable=False)
+    food_preference_type = Column(Enum(FoodPreferenceType), nullable=True)
     preferred_meal_frequency = Column(Integer, default=3)
     snack_preference = Column(Boolean, default=True)
 
     # Cooking and Meal Preferences
     cooking_skill_level = Column(Integer, default=3)  # 1-5 scale
     max_prep_time_minutes = Column(Integer, default=45)
+
+    # Allergies and Restrictions (stored as JSON strings)
+    allergies = Column(Text, nullable=True)  # JSON array of allergies
+    dietary_restrictions = Column(Text, nullable=True)  # JSON array of dietary restrictions
+    disliked_foods = Column(Text, nullable=True)  # JSON array of disliked foods
+    preferred_cuisines = Column(Text, nullable=True)  # JSON array of preferred cuisines
 
     # # Timing Preferences
     # breakfast_time = Column(String(10))
@@ -75,3 +96,4 @@ class UserProfile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+    user = relationship("User", back_populates="user_profile")
