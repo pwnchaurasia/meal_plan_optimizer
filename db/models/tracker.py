@@ -71,3 +71,46 @@ class DailyFitnessData(Base):
     __table_args__ = (
         UniqueConstraint('user_id', 'date', name='unique_user_date'),
     )
+
+
+class DailyActivityTracker(Base):
+    __tablename__ = "daily_activity_tracker"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    date = Column(Date, nullable=False)
+
+    # Workout/Exercise Data (calculated from ExerciseSet data)
+    total_exercises_done = Column(Integer, default=0)
+    total_sets_completed = Column(Integer, default=0)
+    total_weight_lifted = Column(Float, default=0.0)  # Sum of all weights
+    total_reps_completed = Column(Integer, default=0)
+    total_workout_time = Column(Float, default=0.0)  # In minutes
+    
+    # Calorie Data
+    calories_burned_from_activity = Column(Float, default=0.0)  # Calculated from workout intensity
+    calories_consumed = Column(Float, default=0.0)  # Total calories eaten
+    
+    # Macronutrient Data (what user consumed)
+    protein_consumed_g = Column(Float, default=0.0)
+    carbs_consumed_g = Column(Float, default=0.0)
+    fat_consumed_g = Column(Float, default=0.0)
+    fiber_consumed_g = Column(Float, default=0.0)
+    
+    # Net Calorie Balance
+    net_calorie_balance = Column(Float, default=0.0)  # calories_consumed - calories_burned
+    
+    # Additional tracking fields
+    workout_types_done = Column(Text)  # JSON array of workout types done that day
+    notes = Column(Text)  # Optional notes
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+    # Relationships
+    user = relationship("User", back_populates="daily_activity_tracker")
+
+    __table_args__ = (
+        UniqueConstraint('user_id', 'date', name='unique_user_activity_date'),
+    )

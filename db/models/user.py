@@ -32,6 +32,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    daily_activity_tracker = relationship(
+        "DailyActivityTracker",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 class FitnessGoal(Base):
     __tablename__ = "fitness_goals"
