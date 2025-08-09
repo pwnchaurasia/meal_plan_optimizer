@@ -8,9 +8,9 @@ class Gender(enum.Enum):
 
 class WorkoutType(enum.Enum):
     ABS = "ABS"
-    BACK = "CHEST"
+    BACK = "BACK"
     BICEPS = "BICEPS"
-    CARDIO = "cardio"
+    CARDIO = "CARDIO"
     CHEST = "CHEST"
     LEGS = "LEGS"
     SHOULDERS = "SHOULDERS"
