@@ -67,6 +67,9 @@ class FitnessGoal(Base):
 
     user = relationship("User", back_populates="fitness_goal")
 
+    def __repr__(self):
+        return f"{self.id} {self.daily_activity_level} {self.current_weight} {self.target_weight}"
+
 
 class UserProfile(Base):
     __tablename__ = "user_profile"
@@ -102,3 +105,7 @@ class UserProfile(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     user = relationship("User", back_populates="user_profile")
+
+    def __repr__(self):
+        return f"{self.id} {self.gender} {self.cooking_skill_level} {self.food_preference_type}"
+

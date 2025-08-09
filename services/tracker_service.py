@@ -1,6 +1,8 @@
 import json
 from datetime import date
 from typing import List, Optional
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from db.models.tracker import DailyActivityTracker
 from db.models.workout import ExerciseSet, Exercise, Workout
@@ -150,7 +152,7 @@ class TrackerService:
             ).join(
                 Workout, Exercise.workout_id == Workout.id
             ).filter(
-                db.func.date(ExerciseSet.created_at) == target_date
+                func.date(ExerciseSet.created_at) == target_date
             ).all()
             
             if not exercise_sets:
