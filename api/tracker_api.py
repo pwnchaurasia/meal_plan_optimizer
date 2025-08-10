@@ -1,5 +1,6 @@
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pygments.lexer import default
 from sqlalchemy.orm import Session
 from starlette.responses import JSONResponse
 
@@ -83,9 +84,12 @@ async def update_daily_activity_tracker(tracker_data: tracker_schema.DailyActivi
            status_code=status.HTTP_200_OK, 
            name="get-daily-activity-tracker",
            response_model=tracker_schema.DailyActivityTrackerResponseSchema)
-async def get_daily_activity_tracker(tracker_date: date = Query(default=None, description="Date in YYYY-MM-DD format (optional, defaults to today)"),
-                                    current_user=Depends(get_current_user),
-                                    db: Session = Depends(get_db)):
+async def get_daily_activity_tracker(tracker_date: date = Query(
+    default=None,
+    description="Date in YYYY-MM-DD format (optional, defaults to today)"),
+        current_user=Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
     try:
         if tracker_date is None:
             tracker_date = date.today()
@@ -109,9 +113,12 @@ async def get_daily_activity_tracker(tracker_date: date = Query(default=None, de
 @router.post("/calculate-activity-data",
             status_code=status.HTTP_201_CREATED, 
             name="calculate-and-populate-activity-data")
-async def calculate_and_populate_activity_data(target_date: date = Query(..., description="Date to calculate data for in YYYY-MM-DD format"),
-                                              current_user=Depends(get_current_user),
-                                              db: Session = Depends(get_db)):
+async def calculate_and_populate_activity_data(
+        target_date: date = Query(default= None,
+                                  description="Date to calculate data for in YYYY-MM-DD format"
+                                  ),
+        current_user=Depends(get_current_user),
+        db: Session = Depends(get_db)):
     try:
         result = TrackerService.calculate_and_populate_activity_data(current_user.id, target_date, db)
         if result:

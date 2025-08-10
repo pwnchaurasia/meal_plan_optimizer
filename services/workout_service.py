@@ -40,6 +40,7 @@ class WorkoutService:
                 return None
             
             exercise_set = ExerciseSet(
+                user_id=user_id,
                 exercise_id=exercise_id,
                 weight=set_data.weight,
                 reps=set_data.reps,
@@ -89,11 +90,10 @@ class WorkoutService:
             ).join(
                 Workout, Exercise.workout_id == Workout.id
             ).filter(
-                func.date(ExerciseSet.created_at) == workout_date
+                func.date(ExerciseSet.created_at) == workout_date,
+                ExerciseSet.user_id == user_id
             )
             
-            # If we want to filter by user, we need to add user tracking to ExerciseSet
-            # For now, we'll get all sets for the date
             results = query.all()
             
             # Group results by workout and exercise
@@ -251,6 +251,39 @@ class WorkoutService:
     def generate_smart_ppl_workout(user_id: int, target_date: date, db: Session):
         """Generate smart PPL workout based on user's previous workout history"""
         try:
+            # First check if workout already exists for this date
+            existing_workout = WorkoutService.get_daily_workout(user_id, target_date, db)
+            if existing_workout and existing_workout.get("workouts"):
+                # Determine workout type from existing data
+                existing_types = []
+                for workout in existing_workout["workouts"]:
+                    workout_type_str = workout.get("workout_type", "").lower()
+                    if "chest" in workout_type_str or "shoulder" in workout_type_str or "tricep" in workout_type_str:
+                        existing_types.append("push")
+                    elif "back" in workout_type_str or "bicep" in workout_type_str:
+                        existing_types.append("pull")
+                    elif "legs" in workout_type_str or "abs" in workout_type_str:
+                        existing_types.append("legs")
+                
+                # Return existing workout info
+                workout_type = "mixed"
+                if "push" in existing_types and len(set(existing_types)) == 1:
+                    workout_type = "push"
+                elif "pull" in existing_types and len(set(existing_types)) == 1:
+                    workout_type = "pull"
+                elif "legs" in existing_types and len(set(existing_types)) == 1:
+                    workout_type = "legs"
+                
+                return {
+                    "status": "info",
+                    "message": f"Workout already exists for {target_date.isoformat()}",
+                    "workout_type": workout_type,
+                    "date": target_date.isoformat(),
+                    "total_sets": sum(len(ex.get("sets", [])) for w in existing_workout["workouts"] for ex in w.get("exercises", [])),
+                    "existing_workout": True
+                }
+            
+            # If no existing workout, generate new one
             yesterday = target_date - timedelta(days=1)
             yesterday_workout = WorkoutService.get_daily_workout(user_id, yesterday, db)
             
@@ -408,7 +441,7 @@ class WorkoutService:
                     {'weight': 0.0, 'reps': 5, 'time': 0.0},
                     {'weight': 0.0, 'reps': 4, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(pullups.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, pullups.id, sets_data, target_date, db)
                 created_sets.extend(sets)
                 
                 # Barbell Rows - 4 sets
@@ -419,7 +452,7 @@ class WorkoutService:
                     {'weight': 80.0, 'reps': 8, 'time': 0.0},
                     {'weight': 85.0, 'reps': 6, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(barbell_rows.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, barbell_rows.id, sets_data, target_date, db)
                 created_sets.extend(sets)
             
             # Biceps exercises
@@ -431,14 +464,14 @@ class WorkoutService:
                     {'weight': 35.0, 'reps': 10, 'time': 0.0},
                     {'weight': 40.0, 'reps': 8, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(barbell_curls.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, barbell_curls.id, sets_data, target_date, db)
                 created_sets.extend(sets)
             
             # Cardio - 20 minutes
             if cardio_exercises:
                 cycling = next((ex for ex in cardio_exercises if "Cycling" in ex.name), cardio_exercises[1])
                 sets_data = [{'weight': 0.0, 'reps': 0, 'time': 20.0}]
-                sets = WorkoutService._create_exercise_sets_for_date(cycling.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, cycling.id, sets_data, target_date, db)
                 created_sets.extend(sets)
             
             db.commit()
@@ -477,7 +510,7 @@ class WorkoutService:
                     {'weight': 100.0, 'reps': 8, 'time': 0.0},
                     {'weight': 110.0, 'reps': 6, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(squats.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, squats.id, sets_data, target_date, db)
                 created_sets.extend(sets)
                 
                 # Leg Press - 3 sets
@@ -487,7 +520,7 @@ class WorkoutService:
                     {'weight': 170.0, 'reps': 12, 'time': 0.0},
                     {'weight': 190.0, 'reps': 10, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(leg_press.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, leg_press.id, sets_data, target_date, db)
                 created_sets.extend(sets)
             
             # Abs exercises
@@ -499,7 +532,7 @@ class WorkoutService:
                     {'weight': 0.0, 'reps': 20, 'time': 0.0},
                     {'weight': 0.0, 'reps': 15, 'time': 0.0}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(crunches.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, crunches.id, sets_data, target_date, db)
                 created_sets.extend(sets)
                 
                 # Plank - 3 sets
@@ -509,7 +542,7 @@ class WorkoutService:
                     {'weight': 0.0, 'reps': 0, 'time': 1.2},
                     {'weight': 0.0, 'reps': 0, 'time': 1.5}
                 ]
-                sets = WorkoutService._create_exercise_sets_for_date(plank.id, sets_data, target_date, db)
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, plank.id, sets_data, target_date, db)
                 created_sets.extend(sets)
             
             db.commit()
