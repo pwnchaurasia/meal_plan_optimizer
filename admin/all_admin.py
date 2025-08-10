@@ -1,6 +1,6 @@
 from sqladmin import ModelView
 
-from db.models import User, UserProfile, DailyActivityTracker, ExerciseSet, Workout, Exercise
+from db.models import User, UserProfile, DailyActivityTracker, ExerciseSet, Workout, Exercise, MealPlan, Meal
 
 
 class UserAdmin(ModelView, model=User):
@@ -61,6 +61,22 @@ class DailyActivityTrackerAdmin(ModelView, model=DailyActivityTracker):
 
 
 
+class MealPlanAdmin(ModelView, model=MealPlan):
+    column_list = [
+        MealPlan.id,
+        MealPlan.user_id,
+        MealPlan.date,
+        MealPlan.target_calories,
+    ]
+
+class MealAdmin(ModelView, model=Meal):
+    column_list = [
+        Meal.id,
+        Meal.meal_plan_id,
+        Meal.meal_type,
+        Meal.meal_name,
+    ]
+
 
 
 admin_views = [UserAdmin,
@@ -68,4 +84,6 @@ admin_views = [UserAdmin,
                DailyActivityTrackerAdmin,
                ExerciseSetAdmin,
                WorkoutAdmin,
-               ExerciseAdmin]
+               ExerciseAdmin,
+               MealPlanAdmin,
+               MealAdmin]

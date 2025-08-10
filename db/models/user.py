@@ -37,6 +37,11 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    meal_plans = relationship(
+        "MealPlan",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
     exercise_set = relationship("ExerciseSet", back_populates="user")
 
@@ -110,4 +115,3 @@ class UserProfile(Base):
 
     def __repr__(self):
         return f"{self.id} {self.gender} {self.cooking_skill_level} {self.food_preference_type}"
-
