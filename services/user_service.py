@@ -27,10 +27,10 @@ class UserService:
     @staticmethod
     def calculate_nutrition_targets(fitness_goal):
         """
-        # this algo is given by AI.
-        # I just instructed what needs to be done,
-        # I am aware of how these calculations are done
-        """
+            # this algo is given by AI.
+            # I just instructed what needs to be done,
+            # I am aware of how these calculations are done
+            """
 
         # Activity level multipliers for TDEE calculation
         activity_multipliers = {
@@ -45,13 +45,13 @@ class UserService:
         weekly_change_map = {
             "slow": 0.25,  # Conservative approach
             "average": 0.5,  # Moderate approach
-            "fast": 1.0  # Aggressive approach (max safe rate)
+            "fast": 0.75  # Aggressive but safer approach (reduced from 1.0)
         }
 
         current_weight = fitness_goal.current_weight
         target_weight = fitness_goal.target_weight
         speed = fitness_goal.goal_achievement_time_frame
-        maintenance_calories = fitness_goal.current_daily_calories  # This should be BMR
+        bmr_calories = fitness_goal.current_daily_calories  # This should be BMR
         daily_activity_level = fitness_goal.daily_activity_level
 
         # Constants
@@ -60,18 +60,18 @@ class UserService:
         daily_kcal_change = (weekly_change * kcal_per_kg) / 7
 
         activity_multiplier = activity_multipliers.get(daily_activity_level, 1.55)  # Default to moderately active
-        tdee_calories = maintenance_calories * activity_multiplier
+        tdee_calories = bmr_calories * activity_multiplier
 
-        # More active people can handle larger deficits/surpluses
+        # Conservative activity adjustment for safety
         activity_adjustment = {
-            "sedentary": 0.8,
-            "lightly_active": 0.9,
-            "moderately_active": 1.0,
-            "very_active": 1.1,
-            "extremely_active": 1.2
+            "sedentary": 0.7,
+            "lightly_active": 0.8,
+            "moderately_active": 0.9,
+            "very_active": 1.0,
+            "extremely_active": 1.0
         }
 
-        adjusted_daily_change = daily_kcal_change * activity_adjustment.get(daily_activity_level, 1.0)
+        adjusted_daily_change = daily_kcal_change * activity_adjustment.get(daily_activity_level, 0.9)
 
         if current_weight < target_weight:
             # Gaining weight - need calorie surplus
@@ -87,16 +87,30 @@ class UserService:
             target_calories = tdee_calories - adjusted_daily_change
             goal_type = "weight_loss"
 
-            # Safety check: Don't go below minimum safe calories
-            min_safe_calories = {
+            # Enhanced safety check: Don't go below minimum safe calories
+            # Calculate minimum as percentage of TDEE for better individualization
+            min_tdee_percentage = 0.75  # Never go below 75% of TDEE
+            calculated_minimum = tdee_calories * min_tdee_percentage
+
+            # Absolute minimum safety values
+            absolute_min_calories = {
                 "sedentary": 1200,
                 "lightly_active": 1300,
                 "moderately_active": 1400,
                 "very_active": 1500,
                 "extremely_active": 1600
             }
-            min_calories = min_safe_calories.get(daily_activity_level, 1200)
+            absolute_min = absolute_min_calories.get(daily_activity_level, 1200)
+
+            # Use the higher of the two minimum values
+            min_calories = max(calculated_minimum, absolute_min)
             target_calories = max(target_calories, min_calories)
+
+            # If target calories hit the minimum, recalculate timeline
+            if target_calories == min_calories:
+                actual_deficit = tdee_calories - target_calories
+                actual_weekly_loss = (actual_deficit * 7) / kcal_per_kg
+                weeks = total_kg / actual_weekly_loss if actual_weekly_loss > 0 else float('inf')
 
         else:
             # Maintaining weight
@@ -105,28 +119,38 @@ class UserService:
                 "calculated_daily_calories": round(tdee_calories),
                 "goal_type": "maintenance",
                 "tdee_calories": round(tdee_calories),
-                "bmr_calories": round(maintenance_calories),
+                "bmr_calories": round(bmr_calories),
                 "activity_level": daily_activity_level,
                 "activity_multiplier": activity_multiplier
             }
 
         # Calculate macro adjustments based on activity level and goal
         protein_multiplier = {
-            "sedentary": 0.8,
-            "lightly_active": 1.0,
-            "moderately_active": 1.2,
-            "very_active": 1.6,
-            "extremely_active": 2.0
+            "sedentary": 1.0,  # Increased from 0.8
+            "lightly_active": 1.2,  # Increased from 1.0
+            "moderately_active": 1.4,  # Increased from 1.2
+            "very_active": 1.8,  # Increased from 1.6
+            "extremely_active": 2.2  # Increased from 2.0
         }
 
-        recommended_protein_g = current_weight * protein_multiplier.get(daily_activity_level, 1.2)
+        # Adjust protein needs based on goal type
+        base_protein = current_weight * protein_multiplier.get(daily_activity_level, 1.4)
+
+        if goal_type == "weight_loss":
+            # Higher protein during weight loss to preserve muscle
+            recommended_protein_g = base_protein * 1.2
+        elif goal_type == "weight_gain":
+            # Higher protein during weight gain for muscle building
+            recommended_protein_g = base_protein * 1.1
+        else:
+            recommended_protein_g = base_protein
 
         return {
             "weeks": round(weeks, 1),
             "calculated_daily_calories": round(target_calories),
             "goal_type": goal_type,
             "tdee_calories": round(tdee_calories),
-            "bmr_calories": round(maintenance_calories),
+            "bmr_calories": round(bmr_calories),
             "activity_level": daily_activity_level,
             "activity_multiplier": activity_multiplier,
             "calorie_adjustment": round(adjusted_daily_change),

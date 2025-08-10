@@ -183,7 +183,7 @@ class LLMService:
 Generate a complete daily meal plan in JSON format for a user with the following profile:
 
 USER PROFILE:
-- Gender: {user_data.get('gender', 'Not specified')}
+- Gender: {user_data.get('gender', 'Male')}
 - Food Preference: {user_data.get('food_preference_type', 'omnivore')}
 - Cooking Skill Level: {user_data.get('cooking_skill_level', 3)}/5
 - Max Prep Time: {user_data.get('max_prep_time_minutes', 45)} minutes

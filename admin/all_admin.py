@@ -75,6 +75,13 @@ class MealAdmin(ModelView, model=Meal):
         Meal.meal_plan_id,
         Meal.meal_type,
         Meal.meal_name,
+        Meal.description,
+        Meal.calories,
+        Meal.protein_g,
+        Meal.carbs_g,
+        Meal.fiber_g,
+        Meal.fat_g
+
     ]
 
 
