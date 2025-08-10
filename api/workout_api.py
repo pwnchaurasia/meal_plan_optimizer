@@ -102,12 +102,49 @@ async def get_daily_workout(workout_date: date = Query(default=None, description
         )
 
 
+@router.post("/generate-smart-ppl-workout",
+            status_code=status.HTTP_201_CREATED,
+            name="generate-smart-ppl-workout")
+async def generate_smart_ppl_workout(target_date: date = Query(default=None, description="Date to generate workout for (optional, defaults to today)"),
+                                    current_user=Depends(get_current_user),
+                                    db: Session = Depends(get_db)):
+    """Generate smart PPL workout based on user's previous workout history"""
+    try:
+        # If no date provided, use today's date
+        if target_date is None:
+            target_date = date.today()
+            
+        result = WorkoutService.generate_smart_ppl_workout(current_user.id, target_date, db)
+        if result:
+            if result.get("status") == "info":
+                return JSONResponse(
+                    content=result,
+                    status_code=status.HTTP_200_OK
+                )
+            else:
+                return JSONResponse(
+                    content=result,
+                    status_code=status.HTTP_201_CREATED
+                )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                content={"status": "error", "message": "Failed to generate smart PPL workout"}
+            )
+    except Exception as e:
+        app_logger.exceptionlogs(f"Error in generate_smart_ppl_workout: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"status": "error", "message": resp_msgs.STATUS_500_MSG}
+        )
+
+
 # Admin endpoint to populate default workouts and exercises
 @router.post("/admin/populate-defaults",
             status_code=status.HTTP_201_CREATED,
             name="populate-default-workouts")
 async def populate_default_workouts(db: Session = Depends(get_db)):
-    """Admin endpoint to populate default workouts and exercises"""
+    """ For creating the default workouts and exercises in that """
     try:
         result = WorkoutService.populate_default_workouts_and_exercises(db)
         if result:

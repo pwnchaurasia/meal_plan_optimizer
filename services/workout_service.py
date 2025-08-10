@@ -1,7 +1,9 @@
 
 
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from db.models.workout import Workout, Exercise, ExerciseSet
 from utils.enums import WorkoutType, ExerciseType
@@ -87,7 +89,7 @@ class WorkoutService:
             ).join(
                 Workout, Exercise.workout_id == Workout.id
             ).filter(
-                db.func.date(ExerciseSet.created_at) == workout_date
+                func.date(ExerciseSet.created_at) == workout_date
             )
             
             # If we want to filter by user, we need to add user tracking to ExerciseSet
@@ -244,3 +246,321 @@ class WorkoutService:
             app_logger.exceptionlogs(f"Error in populate_default_workouts_and_exercises: {e}")
             db.rollback()
             return None
+    
+    @staticmethod
+    def generate_smart_ppl_workout(user_id: int, target_date: date, db: Session):
+        """Generate smart PPL workout based on user's previous workout history"""
+        try:
+            yesterday = target_date - timedelta(days=1)
+            yesterday_workout = WorkoutService.get_daily_workout(user_id, yesterday, db)
+            
+            # Simple PPL cycle logic
+            workout_type = "push"  # Default to push if no previous workout
+            
+            # Check what user did yesterday and determine today's workout
+            if yesterday_workout and yesterday_workout.get("workouts"):
+                yesterday_types = []
+                for workout in yesterday_workout["workouts"]:
+                    workout_type_str = workout.get("workout_type", "").lower()
+                    if "chest" in workout_type_str or "shoulder" in workout_type_str or "tricep" in workout_type_str:
+                        yesterday_types.append("push")
+                    elif "back" in workout_type_str or "bicep" in workout_type_str:
+                        yesterday_types.append("pull")
+                    elif "legs" in workout_type_str or "abs" in workout_type_str:
+                        yesterday_types.append("legs")
+                
+                # PPL cycle: Push → Pull → Legs → Push → ...
+                if "push" in yesterday_types:
+                    workout_type = "pull"
+                elif "pull" in yesterday_types:
+                    workout_type = "legs"
+                elif "legs" in yesterday_types:
+                    workout_type = "push"
+            
+            # Generate workout based on determined type
+            if workout_type == "push":
+                return WorkoutService._generate_push_workout_sets(user_id, target_date, db)
+            elif workout_type == "pull":
+                return WorkoutService._generate_pull_workout_sets(user_id, target_date, db)
+            elif workout_type == "legs":
+                return WorkoutService._generate_legs_abs_workout_sets(user_id, target_date, db)
+            else:
+                return {
+                    "status": "error",
+                    "message": "Could not determine appropriate workout type"
+                }
+                
+        except Exception as e:
+            app_logger.exceptionlogs(f"Error in generate_smart_ppl_workout: {e}")
+            return None
+    
+    @staticmethod
+    def _generate_push_workout_sets(user_id: int, target_date: date, db: Session):
+        """Generate Push workout sets (Chest, Shoulders, Triceps + Cardio)"""
+        try:
+            created_sets = []
+            
+            # Get exercises for each muscle group
+            chest_exercises = WorkoutService._get_exercises_by_type(WorkoutType.CHEST, db)
+            shoulder_exercises = WorkoutService._get_exercises_by_type(WorkoutType.SHOULDERS, db)
+            triceps_exercises = WorkoutService._get_exercises_by_type(WorkoutType.TRICEPS, db)
+            cardio_exercises = WorkoutService._get_exercises_by_type(WorkoutType.CARDIO, db)
+            
+            # Chest exercises
+            if chest_exercises:
+                # Bench Press - 4 sets
+                bench_press = next((ex for ex in chest_exercises if "Bench Press" in ex.name), chest_exercises[0])
+                sets_data = [
+                    {'weight': 60.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 70.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 80.0, 'reps': 8, 'time': 0.0},
+                    {'weight': 85.0, 'reps': 6, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, bench_press.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+                
+                # Incline Press - 3 sets
+                incline_press = next((ex for ex in chest_exercises if "Incline" in ex.name), chest_exercises[1])
+                sets_data = [
+                    {'weight': 25.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 30.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 35.0, 'reps': 8, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, incline_press.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Shoulder exercises
+            if shoulder_exercises:
+                # Overhead Press - 4 sets
+                overhead_press = next((ex for ex in shoulder_exercises if "Overhead Press" in ex.name), shoulder_exercises[0])
+                sets_data = [
+                    {'weight': 40.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 45.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 50.0, 'reps': 8, 'time': 0.0},
+                    {'weight': 55.0, 'reps': 6, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, overhead_press.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+                
+                # Lateral Raises - 3 sets
+                lateral_raises = next((ex for ex in shoulder_exercises if "Lateral Raises" in ex.name), shoulder_exercises[1])
+                sets_data = [
+                    {'weight': 12.0, 'reps': 15, 'time': 0.0},
+                    {'weight': 15.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 15.0, 'reps': 10, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, lateral_raises.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Triceps exercises
+            if triceps_exercises:
+                # Tricep Pushdowns - 3 sets
+                pushdowns = next((ex for ex in triceps_exercises if "Pushdowns" in ex.name), triceps_exercises[0])
+                sets_data = [
+                    {'weight': 30.0, 'reps': 15, 'time': 0.0},
+                    {'weight': 35.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 40.0, 'reps': 10, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, pushdowns.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Cardio - 20 minutes
+            if cardio_exercises:
+                treadmill = next((ex for ex in cardio_exercises if "Treadmill" in ex.name), cardio_exercises[0])
+                sets_data = [{'weight': 0.0, 'reps': 0, 'time': 20.0}]
+                sets = WorkoutService._create_exercise_sets_for_date(user_id, treadmill.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            db.commit()
+            
+            return {
+                "status": "success",
+                "message": "Push workout generated successfully",
+                "workout_type": "push",
+                "date": target_date.isoformat(),
+                "total_sets": len(created_sets),
+                "exercises": ["Bench Press", "Incline Press", "Overhead Press", "Lateral Raises", "Tricep Pushdowns", "Cardio"]
+            }
+            
+        except Exception as e:
+            app_logger.exceptionlogs(f"Error in _generate_push_workout_sets: {e}")
+            db.rollback()
+            return None
+    
+    @staticmethod
+    def _generate_pull_workout_sets(user_id: int, target_date: date, db: Session):
+        """Generate Pull workout sets (Back, Biceps + Cardio)"""
+        try:
+            created_sets = []
+            
+            # Get exercises for each muscle group
+            back_exercises = WorkoutService._get_exercises_by_type(WorkoutType.BACK, db)
+            biceps_exercises = WorkoutService._get_exercises_by_type(WorkoutType.BICEPS, db)
+            cardio_exercises = WorkoutService._get_exercises_by_type(WorkoutType.CARDIO, db)
+            
+            # Back exercises
+            if back_exercises:
+                # Pull-ups - 4 sets
+                pullups = next((ex for ex in back_exercises if "Pull-ups" in ex.name), back_exercises[0])
+                sets_data = [
+                    {'weight': 0.0, 'reps': 8, 'time': 0.0},
+                    {'weight': 0.0, 'reps': 6, 'time': 0.0},
+                    {'weight': 0.0, 'reps': 5, 'time': 0.0},
+                    {'weight': 0.0, 'reps': 4, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(pullups.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+                
+                # Barbell Rows - 4 sets
+                barbell_rows = next((ex for ex in back_exercises if "Barbell Rows" in ex.name), back_exercises[1])
+                sets_data = [
+                    {'weight': 60.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 70.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 80.0, 'reps': 8, 'time': 0.0},
+                    {'weight': 85.0, 'reps': 6, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(barbell_rows.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Biceps exercises
+            if biceps_exercises:
+                # Barbell Curls - 3 sets
+                barbell_curls = next((ex for ex in biceps_exercises if "Barbell Curls" in ex.name), biceps_exercises[0])
+                sets_data = [
+                    {'weight': 30.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 35.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 40.0, 'reps': 8, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(barbell_curls.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Cardio - 20 minutes
+            if cardio_exercises:
+                cycling = next((ex for ex in cardio_exercises if "Cycling" in ex.name), cardio_exercises[1])
+                sets_data = [{'weight': 0.0, 'reps': 0, 'time': 20.0}]
+                sets = WorkoutService._create_exercise_sets_for_date(cycling.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            db.commit()
+            
+            return {
+                "status": "success",
+                "message": "Pull workout generated successfully",
+                "workout_type": "pull",
+                "date": target_date.isoformat(),
+                "total_sets": len(created_sets),
+                "exercises": ["Pull-ups", "Barbell Rows", "Barbell Curls", "Cardio"]
+            }
+            
+        except Exception as e:
+            app_logger.exceptionlogs(f"Error in _generate_pull_workout_sets: {e}")
+            db.rollback()
+            return None
+    
+    @staticmethod
+    def _generate_legs_abs_workout_sets(user_id: int, target_date: date, db: Session):
+        """Generate Legs + Abs workout sets (no cardio on leg day)"""
+        try:
+            created_sets = []
+            
+            # Get exercises for each muscle group
+            leg_exercises = WorkoutService._get_exercises_by_type(WorkoutType.LEGS, db)
+            abs_exercises = WorkoutService._get_exercises_by_type(WorkoutType.ABS, db)
+            
+            # Leg exercises
+            if leg_exercises:
+                # Squats - 4 sets
+                squats = next((ex for ex in leg_exercises if "Squats" in ex.name), leg_exercises[0])
+                sets_data = [
+                    {'weight': 80.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 90.0, 'reps': 10, 'time': 0.0},
+                    {'weight': 100.0, 'reps': 8, 'time': 0.0},
+                    {'weight': 110.0, 'reps': 6, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(squats.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+                
+                # Leg Press - 3 sets
+                leg_press = next((ex for ex in leg_exercises if "Leg Press" in ex.name), leg_exercises[1])
+                sets_data = [
+                    {'weight': 150.0, 'reps': 15, 'time': 0.0},
+                    {'weight': 170.0, 'reps': 12, 'time': 0.0},
+                    {'weight': 190.0, 'reps': 10, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(leg_press.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            # Abs exercises
+            if abs_exercises:
+                # Crunches - 3 sets
+                crunches = next((ex for ex in abs_exercises if "Crunches" in ex.name), abs_exercises[0])
+                sets_data = [
+                    {'weight': 0.0, 'reps': 25, 'time': 0.0},
+                    {'weight': 0.0, 'reps': 20, 'time': 0.0},
+                    {'weight': 0.0, 'reps': 15, 'time': 0.0}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(crunches.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+                
+                # Plank - 3 sets
+                plank = next((ex for ex in abs_exercises if "Plank" in ex.name), abs_exercises[1])
+                sets_data = [
+                    {'weight': 0.0, 'reps': 0, 'time': 1.0},
+                    {'weight': 0.0, 'reps': 0, 'time': 1.2},
+                    {'weight': 0.0, 'reps': 0, 'time': 1.5}
+                ]
+                sets = WorkoutService._create_exercise_sets_for_date(plank.id, sets_data, target_date, db)
+                created_sets.extend(sets)
+            
+            db.commit()
+            
+            return {
+                "status": "success",
+                "message": "Legs + Abs workout generated successfully",
+                "workout_type": "legs",
+                "date": target_date.isoformat(),
+                "total_sets": len(created_sets),
+                "exercises": ["Squats", "Leg Press", "Crunches", "Plank"]
+            }
+            
+        except Exception as e:
+            app_logger.exceptionlogs(f"Error in _generate_legs_abs_workout_sets: {e}")
+            db.rollback()
+            return None
+    
+    @staticmethod
+    def _get_exercises_by_type(workout_type: WorkoutType, db: Session):
+        """Helper method to get exercises by workout type"""
+        workout = db.query(Workout).filter(
+            Workout.workout_type == workout_type,
+            Workout.is_default == True
+        ).first()
+        
+        if not workout:
+            return []
+        
+        return db.query(Exercise).filter(Exercise.workout_id == workout.id).all()
+    
+    @staticmethod
+    def _create_exercise_sets_for_date(user_id:int, exercise_id: int, sets_data: list, target_date: date, db: Session):
+        """Helper method to create exercise sets for a specific date"""
+        created_sets = []
+        
+        for set_data in sets_data:
+            exercise_set = ExerciseSet(
+                user_id=user_id,
+                exercise_id=exercise_id,
+                weight=set_data['weight'],
+                reps=set_data['reps'],
+                time=set_data['time'],
+                created_at=target_date
+            )
+            db.add(exercise_set)
+            created_sets.append({
+                "exercise_id": exercise_id,
+                "weight": set_data['weight'],
+                "reps": set_data['reps'],
+                "time": set_data['time']
+            })
+        
+        return created_sets

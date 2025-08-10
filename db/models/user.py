@@ -38,6 +38,8 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
+    exercise_set = relationship("ExerciseSet", back_populates="user")
+
 class FitnessGoal(Base):
     __tablename__ = "fitness_goals"
 

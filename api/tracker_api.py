@@ -86,12 +86,10 @@ async def update_daily_activity_tracker(tracker_data: tracker_schema.DailyActivi
 async def get_daily_activity_tracker(tracker_date: date = Query(default=None, description="Date in YYYY-MM-DD format (optional, defaults to today)"),
                                     current_user=Depends(get_current_user),
                                     db: Session = Depends(get_db)):
-    """Get daily activity tracker for a specific date"""
     try:
-        # If no date provided, use today's date
         if tracker_date is None:
             tracker_date = date.today()
-            
+
         result = TrackerService.get_daily_activity_tracker(current_user.id, tracker_date, db)
         if result:
             return result
@@ -114,7 +112,6 @@ async def get_daily_activity_tracker(tracker_date: date = Query(default=None, de
 async def calculate_and_populate_activity_data(target_date: date = Query(..., description="Date to calculate data for in YYYY-MM-DD format"),
                                               current_user=Depends(get_current_user),
                                               db: Session = Depends(get_db)):
-    """Calculate activity data from ExerciseSet data and populate/update tracker"""
     try:
         result = TrackerService.calculate_and_populate_activity_data(current_user.id, target_date, db)
         if result:

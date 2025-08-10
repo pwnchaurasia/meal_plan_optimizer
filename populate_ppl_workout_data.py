@@ -11,6 +11,8 @@ from db.db_conn import get_db
 from db.models.workout import Workout, Exercise, ExerciseSet
 from utils.enums import WorkoutType
 
+USER_ID = 1  # Change this to the target user ID
+DAYS_BACK = 15  # Number of days to populate (including today)
 
 def get_exercises_by_workout_type(workout_type: WorkoutType, db: Session):
     """Get all exercises for a specific workout type"""
@@ -32,6 +34,7 @@ def create_exercise_sets(exercise_id: int, sets_data: list, target_date: date, d
     
     for set_data in sets_data:
         exercise_set = ExerciseSet(
+            user_id=USER_ID,
             exercise_id=exercise_id,
             weight=set_data['weight'],
             reps=set_data['reps'],
@@ -280,8 +283,8 @@ def generate_legs_abs_workout(target_date: date, db: Session):
 
 def populate_ppl_data(user_id: int, days_back: int = 15):
     """Populate PPL workout data for the specified number of days back"""
-    print(f"🏋️  Starting PPL workout data population for user {user_id}")
-    print(f"📅 Generating data for {days_back} days back from today")
+    print(f" Starting PPL workout data population for user {user_id}")
+    print(f"  Generating data for {days_back} days back from today")
     
     # Get database session
     db_gen = get_db()
@@ -299,25 +302,25 @@ def populate_ppl_data(user_id: int, days_back: int = 15):
             workout_data = []
             
             if day_of_week == 0:  # Monday - Push
-                print(f"📅 {target_date} (Monday) - Push Day")
+                print(f"  {target_date} (Monday) - Push Day")
                 workout_data = generate_push_workout(target_date, db)
             elif day_of_week == 1:  # Tuesday - Pull
-                print(f"📅 {target_date} (Tuesday) - Pull Day")
+                print(f"  {target_date} (Tuesday) - Pull Day")
                 workout_data = generate_pull_workout(target_date, db)
             elif day_of_week == 2:  # Wednesday - Legs + Abs
-                print(f"📅 {target_date} (Wednesday) - Legs + Abs Day")
+                print(f"  {target_date} (Wednesday) - Legs + Abs Day")
                 workout_data = generate_legs_abs_workout(target_date, db)
             elif day_of_week == 3:  # Thursday - Push
-                print(f"📅 {target_date} (Thursday) - Push Day")
+                print(f"  {target_date} (Thursday) - Push Day")
                 workout_data = generate_push_workout(target_date, db)
             elif day_of_week == 4:  # Friday - Pull
-                print(f"📅 {target_date} (Friday) - Pull Day")
+                print(f"{target_date} (Friday) - Pull Day")
                 workout_data = generate_pull_workout(target_date, db)
             elif day_of_week == 5:  # Saturday - Legs + Abs
-                print(f"📅 {target_date} (Saturday) - Legs + Abs Day")
+                print(f"{target_date} (Saturday) - Legs + Abs Day")
                 workout_data = generate_legs_abs_workout(target_date, db)
             else:  # Sunday - Rest Day
-                print(f"📅 {target_date} (Sunday) - Rest Day 😴")
+                print(f"{target_date} (Sunday) - Rest Day 😴")
                 continue
             
             if workout_data:
@@ -325,15 +328,15 @@ def populate_ppl_data(user_id: int, days_back: int = 15):
                 day_sets = sum(len(exercise['sets']) for exercise in workout_data)
                 total_sets += day_sets
                 
-                print(f"   ✅ Created {len(workout_data)} exercises with {day_sets} sets")
+                print(f"Created {len(workout_data)} exercises with {day_sets} sets")
                 for exercise in workout_data:
                     print(f"      • {exercise['exercise']}: {len(exercise['sets'])} sets")
         
         # Commit all changes
         db.commit()
         
-        print(f"\n🎉 PPL workout data population completed!")
-        print(f"📊 Summary:")
+        print(f"PPL workout data population completed!")
+        print(f"Summary:")
         print(f"   • Total workout days: {total_workouts}")
         print(f"   • Total exercise sets: {total_sets}")
         print(f"   • Date range: {date.today() - timedelta(days=days_back-1)} to {date.today()}")
@@ -372,7 +375,7 @@ def main():
         print("3. Example: POST /tracker/calculate-activity-data?target_date=2024-01-15")
         return 0
     else:
-        print("\n❌ Script failed!")
+        print("Script failed!")
         return 1
 
 

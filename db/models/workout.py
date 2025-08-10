@@ -38,8 +38,10 @@ class ExerciseSet(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     exercise_id = Column(Integer, ForeignKey("exercises.id"), nullable=False)
-
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     weight = Column(Float, default=0)
     reps = Column(Integer, default=0)
     time = Column(Float, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="exercise_set")
