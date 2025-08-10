@@ -12,7 +12,36 @@
   http://127.0.0.1:8000/docs
 ```
 
-## Meal Plan Optimizer
+# Meal Plan Optimizer
+
+
+## Requirements
+
+People struggle to translate their health goals and daily activities into personalized, 
+actionable meal plans. 
+Solutions are mostly one size fit all,
+If you want to lose weight eat less - calories, 
+If you want to gain weight eat more calories
+
+There's a gap between knowing what you should eat and actually planning meals that
+align with your specific health profile, activity levels, and lifestyle constraints.
+
+
+## Scope
+
+We collect different kinds of user metric, like food preference, health condition,
+your current lifestyle, daily activity level.
+And use these metrics to optimize your meals according to you need.
+
+
+## Target User
+
+Working professional between age (20-60) who wants to transform their health.
+
+
+
+
+## Solution
 
 `You can't manage what you can't measure.`
 
@@ -22,9 +51,8 @@ Save your meal preference and grocery inventory to get meals suggestions.
 
 ### Unique Value proposition
 
-1. Grocery Inventory: Upload the image of the bill, or manually enter what you bought.
-2. Activity Tracking: Connect with different health bands and watches to get the detail of your health
-3. Workout Progress: Track your workout.
+1. Activity Tracking: Connect with different health bands and watches to get the detail of your health
+2. Workout Progress: Track your workout.
 
 ##### Future scope
 1. Grocery Inventory: we can upload images of bill to prepare the inventory, but as different shops and market
@@ -53,7 +81,8 @@ Also, if user's inventory is big, we will try not to repeat the suggested meals.
 #### Business Logic
 1. User Profile Manager
 2. Workout Logger
-3. Integration with 3rd party apps for logging more detailed data
+3. Activity Tracker
+4. Meal plan generator
 
 
 ### Datalayer
