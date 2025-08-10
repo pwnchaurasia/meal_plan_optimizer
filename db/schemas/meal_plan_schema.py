@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field
 
@@ -79,8 +79,8 @@ class MealPlanResponseSchema(BaseModel):
     llm_model_used: Optional[str]
     generation_time_seconds: Optional[float]
     is_active: bool
-    created_at: str
-    updated_at: str
+    created_at: datetime
+    updated_at: datetime
     meals: List[MealResponseSchema] = []
 
     class Config:

@@ -76,57 +76,86 @@ async def get_meal_plan(target_date: date = Query(..., description="Date in YYYY
                        db: Session = Depends(get_db)):
     """Get meal plan for a specific date"""
     try:
-        meal_planning_service = MealPlanningService()
-        meal_plan = await meal_planning_service.get_meal_plan(current_user.id, target_date, db)
+        from db.models.meal_plan import MealPlan
+        from sqlalchemy.orm import joinedload
+        
+        meal_plan = db.query(MealPlan).options(
+            joinedload(MealPlan.meals)
+        ).filter(
+            MealPlan.user_id == current_user.id,
+            MealPlan.date == target_date
+        ).first()
         
         if meal_plan:
             return meal_plan
         else:
-            return JSONResponse(
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                content={"status": "error", "message": "No meal plan found for the specified date"}
+                detail="No meal plan found for the specified date"
             )
             
+    except HTTPException:
+        raise
     except Exception as e:
         app_logger.exceptionlogs(f"Error in get_meal_plan: {e}")
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"status": "error", "message": resp_msgs.STATUS_500_MSG}
+            detail=resp_msgs.STATUS_500_MSG
         )
 
 
 @router.get("/summary",
            status_code=status.HTTP_200_OK,
-           name="get-meal-plan-summary")
+           name="get-meal-plan-summary",
+           response_model=meal_plan_schema.MealPlanSummarySchema)
 async def get_meal_plan_summary(target_date: date = Query(..., description="Date in YYYY-MM-DD format"),
                                current_user=Depends(get_current_user),
                                db: Session = Depends(get_db)):
     """Get a summary of the meal plan for a specific date"""
     try:
-        meal_planning_service = MealPlanningService()
-        result = await meal_planning_service.get_meal_plan_summary(current_user.id, target_date, db)
+        from db.models.meal_plan import MealPlan
         
-        if result.get("status") == "success":
-            return JSONResponse(
-                content=result,
-                status_code=status.HTTP_200_OK
+        meal_plan = db.query(MealPlan).filter(
+            MealPlan.user_id == current_user.id,
+            MealPlan.date == target_date
+        ).first()
+        
+        if not meal_plan:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No meal plan found for the specified date"
             )
-        elif result.get("status") == "not_found":
-            return JSONResponse(
-                content=result,
-                status_code=status.HTTP_404_NOT_FOUND
-            )
-        else:
-            return JSONResponse(
-                content=result,
-                status_code=status.HTTP_400_BAD_REQUEST
-            )
+        
+        # Calculate summary data
+        calorie_difference = meal_plan.total_calories - meal_plan.target_calories
+        total_calories = meal_plan.total_calories or 1  # Avoid division by zero
+        protein_percentage = (meal_plan.total_protein_g * 4 / total_calories) * 100
+        carbs_percentage = (meal_plan.total_carbs_g * 4 / total_calories) * 100
+        fat_percentage = (meal_plan.total_fat_g * 9 / total_calories) * 100
+        
+        summary = meal_plan_schema.MealPlanSummarySchema(
+            meal_plan_id=meal_plan.id,
+            date=meal_plan.date,
+            target_calories=meal_plan.target_calories,
+            total_calories=meal_plan.total_calories,
+            calorie_difference=round(calorie_difference, 1),
+            protein_percentage=round(protein_percentage, 1),
+            carbs_percentage=round(carbs_percentage, 1),
+            fat_percentage=round(fat_percentage, 1),
+            meals_count=len(meal_plan.meals),
+            generation_time=meal_plan.generation_time_seconds,
+            llm_model=meal_plan.llm_model_used
+        )
+        
+        return summary
             
+    except HTTPException:
+        raise
     except Exception as e:
         app_logger.exceptionlogs(f"Error in get_meal_plan_summary: {e}")
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"status": "error", "message": resp_msgs.STATUS_500_MSG}
+            detail=resp_msgs.STATUS_500_MSG
         )
 
 
@@ -190,32 +219,38 @@ async def quick_generate_meal_plan(target_date: date = Query(default=None, descr
 
 @router.get("/today",
            status_code=status.HTTP_200_OK,
-           name="get-today-meal-plan")
+           name="get-today-meal-plan",
+           response_model=meal_plan_schema.MealPlanResponseSchema)
 async def get_today_meal_plan(current_user=Depends(get_current_user),
                              db: Session = Depends(get_db)):
     """Get today's meal plan"""
     try:
+        from db.models.meal_plan import MealPlan
+        from sqlalchemy.orm import joinedload
+        
         today = date.today()
-        meal_planning_service = MealPlanningService()
-        meal_plan = await meal_planning_service.get_meal_plan(current_user.id, today, db)
+        meal_plan = db.query(MealPlan).options(
+            joinedload(MealPlan.meals)
+        ).filter(
+            MealPlan.user_id == current_user.id,
+            MealPlan.date == today
+        ).first()
         
         if meal_plan:
             return meal_plan
         else:
-            return JSONResponse(
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                content={
-                    "status": "not_found", 
-                    "message": "No meal plan found for today",
-                    "suggestion": "Use POST /meal-plans/quick-generate to create today's meal plan"
-                }
+                detail="No meal plan found for today. Use POST /meal-plans/quick-generate to create today's meal plan"
             )
             
+    except HTTPException:
+        raise
     except Exception as e:
         app_logger.exceptionlogs(f"Error in get_today_meal_plan: {e}")
-        return JSONResponse(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"status": "error", "message": resp_msgs.STATUS_500_MSG}
+            detail=resp_msgs.STATUS_500_MSG
         )
 
 
@@ -276,8 +311,8 @@ async def demo_generate_meal_plan_with_activity(target_date: date = Query(..., d
             user_id=current_user.id,
             target_date=target_date,
             custom_config={
-                "llm_provider": "openai",
-                "model_name": "gpt-4",
+                "llm_provider": "ollama",
+                "model_name": "qwen2:7b",
                 "temperature": 0.7
             },
             regenerate_if_exists=True,  # Always regenerate for demo
